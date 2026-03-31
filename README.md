@@ -29,6 +29,11 @@ References:
 - `references/VEEV/`: `virus.fa` and `virus.gtf`
 - `references/EEEV/`: `virus.fa` and `virus.gtf`
 
+Reference folders are split by role:
+
+- `references/` holds the active pipeline-facing references used by runs
+- `viral_reference_work/` holds viral source files and derived work products such as raw source annotations, curation tables, and polish outputs
+
 The repo already includes curated viral references in [references/VEEV/virus.fa](./references/VEEV/virus.fa), [references/VEEV/virus.gtf](./references/VEEV/virus.gtf), [references/EEEV/virus.fa](./references/EEEV/virus.fa), and [references/EEEV/virus.gtf](./references/EEEV/virus.gtf).
 
 ## Basic Workflow
