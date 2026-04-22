@@ -60,6 +60,39 @@ Important setting:
 
 - set `ISAAC_ACCOUNT` to the real account instead of `ACF-UTKXXXX`
 
+## Known Working ISAAC Runtime
+
+Do not rely on the cluster default `nextflow` module alone. On ISAAC it can
+resolve to an old `20.04.1` launcher, which is too old for `nf-core/rnaseq
+3.23.0`.
+
+Known-good bootstrap:
+
+```bash
+mkdir -p "$HOME/bin"
+cd "$HOME/bin"
+curl -s https://get.nextflow.io | bash
+chmod +x nextflow
+
+module purge
+module load openjdk/17.0.0_35
+export PATH="$HOME/bin:$PATH"
+export NXF_VER=25.04.3
+export SKIP_MODULE_LOAD=1
+
+which nextflow
+java -version
+nextflow -version
+```
+
+The wrapper now checks both runtimes before launch and prints the detected
+`java` and `nextflow` paths and versions. The corresponding defaults in
+`settings.env` are:
+
+- `JAVA_MODULE=openjdk/17.0.0_35`
+- `NEXTFLOW_BIN_DIR=$HOME/bin`
+- `NXF_VER=25.04.3`
+
 Preflight check a dataset:
 
 ```bash
@@ -139,6 +172,7 @@ Smoke test outputs go to:
 ## Requirements
 
 - Slurm
+- Java `>= 17`
 - Nextflow `>= 25.04.3`
 - Singularity or Apptainer
 - Python 3

@@ -19,9 +19,14 @@ set -euo pipefail
 # Common HPC terminal commands:
 #   cd /path/to/veeev_nat_hist_nfcore
 #   nano settings.env
-#   module avail nextflow
+#   module avail openjdk
 #   python3 bin/stage_nat_hist_inputs.py "/path/to/V-EEEV Nat Hist"
 #   bash bin/precache_nfcore_containers.sh
+#   module purge
+#   module load openjdk/17.0.0_35
+#   export PATH="$HOME/bin:$PATH"
+#   export NXF_VER=25.04.3
+#   export SKIP_MODULE_LOAD=1
 #   PREFLIGHT_ONLY=1 bash submit_rnaseq.sh mouse_veev
 #   SMOKE_TEST=1 PREFLIGHT_ONLY=1 bash submit_rnaseq.sh mouse_veev
 #   export ISAAC_ACCOUNT="ACF-UTKXXXX"
@@ -47,6 +52,11 @@ Quick HPC commands:
   cd /path/to/veeev_nat_hist_nfcore
   nano settings.env
   python3 bin/stage_nat_hist_inputs.py "/path/to/V-EEEV Nat Hist"
+  module purge
+  module load openjdk/17.0.0_35
+  export PATH="$HOME/bin:$PATH"
+  export NXF_VER=25.04.3
+  export SKIP_MODULE_LOAD=1
   PREFLIGHT_ONLY=1 bash submit_rnaseq.sh mouse_veev
   SMOKE_TEST=1 PREFLIGHT_ONLY=1 bash submit_rnaseq.sh mouse_veev
   export ISAAC_ACCOUNT="ACF-UTKXXXX"
@@ -113,6 +123,8 @@ host_dir="$script_dir/references/$host_ref"
 virus_dir="$script_dir/references/$virus_ref"
 
 nextflow_module=${NEXTFLOW_MODULE:-}
+java_module=${JAVA_MODULE:-}
+nextflow_bin_dir=${NEXTFLOW_BIN_DIR:-}
 container_module=${CONTAINER_MODULE:-}
 nfcore_profile=${NFCORE_PROFILE:-}
 results_base=${RESULTS_BASE:-}
@@ -256,6 +268,12 @@ ensure_module_command() {
     command -v module >/dev/null 2>&1
 }
 
+prepend_nextflow_bin_dir() {
+    if [[ -n "$nextflow_bin_dir" && -x "$nextflow_bin_dir/nextflow" ]]; then
+        export PATH="$nextflow_bin_dir:$PATH"
+    fi
+}
+
 nextflow_version_ge() {
     local current=$1
     local minimum=$2
@@ -283,6 +301,41 @@ nextflow_version_ge() {
     (( current_patch >= minimum_patch ))
 }
 
+java_version_ge() {
+    local current=$1
+    local minimum=$2
+    local current_major minimum_major
+
+    current_major=${current%%.*}
+    minimum_major=${minimum%%.*}
+    (( current_major >= minimum_major ))
+}
+
+check_java_version() {
+    local required_minimum="17"
+    local detected_version
+
+    if ! command -v java >/dev/null 2>&1; then
+        echo "java is not on PATH after runtime setup" >&2
+        exit 1
+    fi
+
+    detected_version=$(java -version 2>&1 | awk -F '"' '/version/ {print $2; exit}')
+    if [[ -z "$detected_version" ]]; then
+        echo "Could not determine Java version from 'java -version'" >&2
+        exit 1
+    fi
+
+    if [[ "$detected_version" == 1.* ]]; then
+        detected_version=${detected_version#1.}
+    fi
+
+    if ! java_version_ge "$detected_version" "$required_minimum"; then
+        echo "Java $detected_version is too old for Nextflow $NXF_VER; need >= $required_minimum" >&2
+        exit 1
+    fi
+}
+
 check_nextflow_version() {
     local required_minimum="25.04.3"
     local detected_version
@@ -306,11 +359,23 @@ check_nextflow_version() {
     fi
 }
 
+print_runtime_summary() {
+    printf 'Runtime nextflow: %s\n' "$(command -v nextflow)"
+    printf 'Runtime java: %s\n' "$(command -v java)"
+    nextflow -version | awk 'NR<=4 {print}'
+    java -version 2>&1 | awk 'NR==1 {print}'
+}
+
 # Step 7: load Nextflow and the container runtime unless the environment already has them.
 if [[ "${SKIP_MODULE_LOAD:-0}" != "1" ]]; then
     if ensure_module_command; then
         module purge
-        module load "$nextflow_module"
+        if [[ -n "$java_module" ]]; then
+            module load "$java_module"
+        fi
+        if [[ -n "$nextflow_module" ]]; then
+            module load "$nextflow_module"
+        fi
         if [[ -n "$container_module" ]]; then
             module load "$container_module"
         fi
@@ -320,8 +385,13 @@ if [[ "${SKIP_MODULE_LOAD:-0}" != "1" ]]; then
     fi
 fi
 
-# Step 7b: fail early if the loaded Nextflow is too old for this nf-core release.
+# Step 7b: prefer a user-managed Nextflow launcher when configured.
+prepend_nextflow_bin_dir
+
+# Step 7c: fail early if the loaded Java/Nextflow runtime is not usable.
+check_java_version
 check_nextflow_version
+print_runtime_summary
 
 # Step 8: build the combined reference and generate the nf-core samplesheet.
 "$reference_builder" "$dataset"
