@@ -24,14 +24,18 @@ references/mouse/*
 references/rat/*
 references/EEEV/*
 references/VEEV/*
+references/VEEV_INH/*
 !references/mouse/.gitkeep
 !references/rat/.gitkeep
 !references/EEEV/.gitkeep
 !references/VEEV/.gitkeep
+!references/VEEV_INH/.gitkeep
 !references/EEEV/virus.fa
 !references/EEEV/virus.gtf
 !references/VEEV/virus.fa
 !references/VEEV/virus.gtf
+!references/VEEV_INH/virus.fa
+!references/VEEV_INH/virus.gtf
 
 # Python cache
 bin/__pycache__/

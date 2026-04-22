@@ -1,0 +1,5 @@
+KP282671.1	curated	gene	1	11417	.	+	.	gene_id "VEEV"; gene_name "VEEV";
+KP282671.1	curated	transcript	1	11417	.	+	.	gene_id "VEEV"; gene_name "VEEV"; transcript_id "VEEV_49S"; transcript_name "VEEV_49S";
+KP282671.1	curated	exon	1	11417	.	+	.	gene_id "VEEV"; gene_name "VEEV"; transcript_id "VEEV_49S"; transcript_name "VEEV_49S";
+KP282671.1	curated	transcript	7567	11417	.	+	.	gene_id "VEEV"; gene_name "VEEV"; transcript_id "VEEV_26S"; transcript_name "VEEV_26S";
+KP282671.1	curated	exon	7567	11417	.	+	.	gene_id "VEEV"; gene_name "VEEV"; transcript_id "VEEV_26S"; transcript_name "VEEV_26S";

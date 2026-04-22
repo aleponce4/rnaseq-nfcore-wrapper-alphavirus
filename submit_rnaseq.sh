@@ -96,15 +96,15 @@ smoke_manifest="$script_dir/metadata/smoke_samples.tsv"
 case "$dataset" in
     mouse_veev)
         host_ref="mouse"
-        virus_ref="VEEV"
+        virus_ref="${MOUSE_VEEV_VIRUS_REF:-VEEV}"
         ;;
     mouse_eeev)
         host_ref="mouse"
-        virus_ref="EEEV"
+        virus_ref="${MOUSE_EEEV_VIRUS_REF:-EEEV}"
         ;;
     rat_veev)
         host_ref="rat"
-        virus_ref="VEEV"
+        virus_ref="${RAT_VEEV_VIRUS_REF:-VEEV}"
         ;;
 esac
 combined_fasta="$script_dir/references/build/$dataset/combined.fa"

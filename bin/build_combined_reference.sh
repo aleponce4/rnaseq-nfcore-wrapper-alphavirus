@@ -24,15 +24,15 @@ dataset=$1
 case "$dataset" in
     mouse_veev)
         host_ref="mouse"
-        virus_ref="VEEV"
+        virus_ref="${MOUSE_VEEV_VIRUS_REF:-VEEV}"
         ;;
     mouse_eeev)
         host_ref="mouse"
-        virus_ref="EEEV"
+        virus_ref="${MOUSE_EEEV_VIRUS_REF:-EEEV}"
         ;;
     rat_veev)
         host_ref="rat"
-        virus_ref="VEEV"
+        virus_ref="${RAT_VEEV_VIRUS_REF:-VEEV}"
         ;;
     *)
         echo "Dataset must be one of: mouse_veev, mouse_eeev, rat_veev. Got: $dataset" >&2
