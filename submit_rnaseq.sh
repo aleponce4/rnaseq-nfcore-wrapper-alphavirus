@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 #SBATCH -J nfcore_rnaseq
-#SBATCH -p campus
-#SBATCH -q campus
+#SBATCH -p long
+#SBATCH -q long
 #SBATCH -N 1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=16G
-#SBATCH --time=24:00:00
+#SBATCH --time=48:00:00
 #SBATCH -o %x.%j.out
 
 set -euo pipefail
