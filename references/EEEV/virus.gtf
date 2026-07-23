@@ -1,5 +1,5 @@
-EEEV_FL93	curated	gene	1	11704	.	+	.	gene_id "EEEV"; gene_name "EEEV";
-EEEV_FL93	curated	transcript	1	11704	.	+	.	gene_id "EEEV"; gene_name "EEEV"; transcript_id "EEEV_49S"; transcript_name "EEEV_49S";
-EEEV_FL93	curated	exon	1	11704	.	+	.	gene_id "EEEV"; gene_name "EEEV"; transcript_id "EEEV_49S"; transcript_name "EEEV_49S";
-EEEV_FL93	curated	transcript	7550	11704	.	+	.	gene_id "EEEV"; gene_name "EEEV"; transcript_id "EEEV_26S"; transcript_name "EEEV_26S";
-EEEV_FL93	curated	exon	7550	11704	.	+	.	gene_id "EEEV"; gene_name "EEEV"; transcript_id "EEEV_26S"; transcript_name "EEEV_26S";
+KP282670.1	curated	gene	1	11628	.	+	.	gene_id "EEEV"; gene_name "EEEV";
+KP282670.1	curated	transcript	1	11628	.	+	.	gene_id "EEEV"; gene_name "EEEV"; transcript_id "EEEV_49S"; transcript_name "EEEV_49S";
+KP282670.1	curated	exon	1	11628	.	+	.	gene_id "EEEV"; gene_name "EEEV"; transcript_id "EEEV_49S"; transcript_name "EEEV_49S";
+KP282670.1	curated	transcript	7582	11628	.	+	.	gene_id "EEEV"; gene_name "EEEV"; transcript_id "EEEV_26S"; transcript_name "EEEV_26S";
+KP282670.1	curated	exon	7582	11628	.	+	.	gene_id "EEEV"; gene_name "EEEV"; transcript_id "EEEV_26S"; transcript_name "EEEV_26S";
