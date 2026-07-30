@@ -242,8 +242,8 @@ if [[ "${SKIP_RUNTIME_CHECK:-0}" != "1" ]]; then
 fi
 
 # Step 8: build the combined reference and generate the nf-core samplesheet.
-"$reference_builder" "$dataset"
-"$samplesheet_builder" "$fastq_dir" "$samplesheet"
+bash "$reference_builder" "$dataset"
+bash "$samplesheet_builder" "$fastq_dir" "$samplesheet"
 
 # Step 9: assemble the nf-core/rnaseq command with dataset-specific paths.
 cmd=(
