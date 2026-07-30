@@ -1,6 +1,6 @@
-# V-EEEV Nat Hist RNA-seq Pipeline
+# Alphavirus RNA-seq HPC Wrapper
 
-[![CI](https://github.com/ponce-flores/rnaseq-nfcore-wrapper-alphavirus/actions/workflows/ci.yml/badge.svg)](https://github.com/ponce-flores/rnaseq-nfcore-wrapper-alphavirus/actions/workflows/ci.yml)
+[![CI](https://github.com/aleponce4/rnaseq-nfcore-wrapper-alphavirus/actions/workflows/ci.yml/badge.svg)](https://github.com/aleponce4/rnaseq-nfcore-wrapper-alphavirus/actions/workflows/ci.yml)
 
 Wrapper repo for running `nf-core/rnaseq` (`3.23.0`) on the V-EEEV natural history datasets on HPC.
 RNA-seq workflow used for analysis of alphavirus infection studies.  
@@ -86,7 +86,7 @@ SMOKE_TEST=1 PREFLIGHT_ONLY=1 bash submit_rnaseq.sh mouse_veev
 SMOKE_TEST=1 sbatch submit_rnaseq.sh mouse_veev
 ```
 
-### 3. Production HPC Execution Mode
+### 3. Full-dataset SLURM execution
 Submits full dataset analysis jobs to the SLURM batch queue on ISAAC HPC:
 ```bash
 sbatch submit_rnaseq.sh mouse_veev
