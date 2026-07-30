@@ -50,7 +50,7 @@ echo "FASTA header: $HEADER"
 
 if [[ ! "$HEADER" == ">$ACCESSION"* ]]; then
     echo "WARNING: FASTA header does not start with >$ACCESSION"
-    echo "The contig name in BAM headers will be: $(echo "$HEADER" | sed 's/^>//')"
+    echo "The contig name in BAM headers will be: ${HEADER#>}"
 fi
 
 # Generate GTF from GenBank CDS coordinates

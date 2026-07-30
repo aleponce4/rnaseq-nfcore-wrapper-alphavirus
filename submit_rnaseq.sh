@@ -91,7 +91,7 @@ smoke_test=${SMOKE_TEST:-0}
 
 # Step 2: load the central runtime settings, if present.
 if [[ -f "$settings_file" ]]; then
-    # shellcheck disable=SC1091
+    # shellcheck disable=SC1090,SC1091
     source "$settings_file"
 fi
 
@@ -145,7 +145,7 @@ outdir="$results_base/$dataset"
 
 lib_file="$script_dir/bin/lib_rnaseq.sh"
 if [[ -f "$lib_file" ]]; then
-    # shellcheck disable=SC1091
+    # shellcheck disable=SC1090,SC1091
     source "$lib_file"
 else
     echo "Required runtime library missing: $lib_file" >&2

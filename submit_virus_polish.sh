@@ -52,7 +52,7 @@ fi
 
 settings_file="$script_dir/settings.env"
 if [[ -f "$settings_file" ]]; then
-    # shellcheck disable=SC1091
+    # shellcheck disable=SC1090,SC1091
     source "$settings_file"
 fi
 

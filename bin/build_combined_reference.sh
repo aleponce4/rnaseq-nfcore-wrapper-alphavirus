@@ -113,7 +113,7 @@ check_duplicate_fasta_ids() {
 
     if [[ -n "$duplicates" ]]; then
         echo "Duplicate FASTA sequence IDs found across host and virus references:" >&2
-        printf '  %s\n' $duplicates >&2
+        printf '  %s\n' "$duplicates" >&2
         exit 1
     fi
 }
