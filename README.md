@@ -1,5 +1,7 @@
 # V-EEEV Nat Hist RNA-seq Pipeline
 
+[![CI](https://github.com/ponce-flores/rnaseq-nfcore-wrapper-alphavirus/actions/workflows/ci.yml/badge.svg)](https://github.com/ponce-flores/rnaseq-nfcore-wrapper-alphavirus/actions/workflows/ci.yml)
+
 Wrapper repo for running `nf-core/rnaseq` (`3.23.0`) on the V-EEEV natural history datasets on HPC.
 RNA-seq workflow used for analysis of alphavirus infection studies.  
 Supports mixed host/viral transcriptome analysis across multiple species (mouse and rat) with automated dataset staging and reference preparation.
@@ -10,6 +12,32 @@ It does four things:
 2. builds combined host + virus references
 3. generates nf-core samplesheets
 4. launches `nf-core/rnaseq`
+
+---
+
+## Operational Use
+
+- **Workload**: Processed 84 paired-end RNA-seq samples across multiple host species (mouse and rat) and Alphavirus strains (VEEV, EEEV).
+- **Primary Environment**: Institutional HPC cluster (ISAAC HPC at UTK / University of Tennessee Knoxville) running SLURM workload manager.
+- **Workflow Engine & Pipeline**: Nextflow `25.04.3` launching `nf-core/rnaseq` `3.23.0` with STAR-Salmon alignment and quantification (`--aligner star_salmon`).
+- **Containerization**: Singularity/Apptainer container engine with automated container precaching (`bin/precache_nfcore_containers.sh`).
+- **Failure Handling**: Built-in resume capability (`-resume`) and scratch directory storage routing.
+
+---
+
+## Architecture & Data Flow
+
+```mermaid
+flowchart TD
+    A["Raw Mixed FASTQ Delivery"] -->|bin/stage_nat_hist_inputs.py| B["Dataset FASTQ Staging<br/>(mouse_veev / mouse_eeev / rat_veev)"]
+    C["Host References<br/>(references/mouse/, references/rat/)"] & D["Curated Viral References<br/>(references/VEEV/, references/EEEV/)"] -->|bin/build_combined_reference.sh| E["Combined Reference FASTA & GTF<br/>(references/build/&lt;dataset&gt;/)"]
+    B -->|bin/make_samplesheet.sh| F["nf-core Samplesheet CSV<br/>(metadata/&lt;dataset&gt;_samplesheet.csv)"]
+    E & F --> G["Environment & Runtime Validation<br/>(bin/lib_rnaseq.sh)"]
+    G --> H["SLURM Execution Script<br/>(submit_rnaseq.sh)"]
+    H --> I["nf-core/rnaseq (v3.23.0)<br/>STAR-Salmon Pipeline Run"]
+```
+
+---
 
 ## Expected Input
 
@@ -34,9 +62,41 @@ Reference folders are split by role:
 - `references/` holds the active pipeline-facing references used by runs
 - `viral_reference_work/` holds viral source files and derived work products such as raw source annotations, curation tables, and polish outputs
 
-The repo already includes curated viral references in [references/VEEV/virus.fa](./references/VEEV/virus.fa), [references/VEEV/virus.gtf](./references/VEEV/virus.gtf), [references/EEEV/virus.fa](./references/EEEV/virus.fa), and [references/EEEV/virus.gtf](./references/EEEV/virus.gtf).
+The repo already includes curated viral references in [references/VEEV/virus.fa](references/VEEV/virus.fa), [references/VEEV/virus.gtf](references/VEEV/virus.gtf), [references/EEEV/virus.fa](references/EEEV/virus.fa), and [references/EEEV/virus.gtf](references/EEEV/virus.gtf).
 
-## Basic Workflow
+---
+
+## Execution Modes
+
+The wrapper supports three distinct operational execution modes:
+
+### 1. Preflight Validation Mode
+Validates directory structure, FASTQ file existence, paired-end matching, and reference FASTA/GTF files without requesting compute node resources or queuing SLURM jobs:
+```bash
+PREFLIGHT_ONLY=1 bash submit_rnaseq.sh mouse_veev
+```
+
+### 2. Smoke Test Mode
+Generates tiny downsampled paired-end FASTQ subsets (`bin/prepare_smoke_inputs.py`) and verifies end-to-end execution flow before running full datasets:
+```bash
+# Preflight check on smoke subset
+SMOKE_TEST=1 PREFLIGHT_ONLY=1 bash submit_rnaseq.sh mouse_veev
+
+# Run smoke test via SLURM
+SMOKE_TEST=1 sbatch submit_rnaseq.sh mouse_veev
+```
+
+### 3. Production HPC Execution Mode
+Submits full dataset analysis jobs to the SLURM batch queue on ISAAC HPC:
+```bash
+sbatch submit_rnaseq.sh mouse_veev
+sbatch submit_rnaseq.sh mouse_eeev
+sbatch submit_rnaseq.sh rat_veev
+```
+
+---
+
+## Basic Workflow Setup
 
 Stage the mixed delivery:
 
@@ -60,11 +120,12 @@ Important setting:
 
 - set `ISAAC_ACCOUNT` to the real account instead of `ACF-UTKXXXX`
 
+---
+
 ## Known Working ISAAC Runtime
 
 Do not rely on the cluster default `nextflow` module alone. On ISAAC it can
-resolve to an old `20.04.1` launcher, which is too old for `nf-core/rnaseq
-3.23.0`.
+resolve to an old `20.04.1` launcher, which is too old for `nf-core/rnaseq 3.23.0`.
 
 Known-good bootstrap:
 
@@ -85,33 +146,19 @@ java -version
 nextflow -version
 ```
 
-The wrapper now checks both runtimes before launch and prints the detected
-`java` and `nextflow` paths and versions. The corresponding defaults in
-`settings.env` are:
+The wrapper checks both runtimes before launch via `bin/lib_rnaseq.sh` and prints the detected `java` and `nextflow` paths and versions. The corresponding defaults in `settings.env` are:
 
 - `JAVA_MODULE=openjdk/17.0.0_35`
 - `NEXTFLOW_BIN_DIR=$HOME/bin`
 - `NXF_VER=25.04.3`
 
-Preflight check a dataset:
-
-```bash
-PREFLIGHT_ONLY=1 bash submit_rnaseq.sh mouse_veev
-```
-
-Run a dataset:
-
-```bash
-sbatch submit_rnaseq.sh mouse_veev
-sbatch submit_rnaseq.sh mouse_eeev
-sbatch submit_rnaseq.sh rat_veev
-```
+---
 
 ## What `submit_rnaseq.sh` Does
 
 For the selected dataset, the launcher:
 
-1. checks inputs and references
+1. checks inputs and references (`check_fastq_inputs`, `check_reference_inputs`)
 2. builds `references/build/<dataset>/combined.fa`
 3. builds `references/build/<dataset>/combined.gtf`
 4. writes `metadata/<dataset>_samplesheet.csv`
@@ -122,6 +169,8 @@ The nf-core run uses:
 - `--aligner star_salmon`
 - `-profile "$NFCORE_PROFILE"`
 - `-c nextflow.config`
+
+---
 
 ## Useful Commands
 
@@ -137,17 +186,10 @@ Build a combined reference manually:
 bash bin/build_combined_reference.sh mouse_veev
 ```
 
-Print the exact Nextflow command without running:
+Print the exact Nextflow command without running (dry run):
 
 ```bash
-DRY_RUN=1 SKIP_MODULE_LOAD=1 bash submit_rnaseq.sh mouse_veev
-```
-
-Run a smoke test:
-
-```bash
-SMOKE_TEST=1 PREFLIGHT_ONLY=1 bash submit_rnaseq.sh mouse_veev
-SMOKE_TEST=1 sbatch submit_rnaseq.sh mouse_veev
+DRY_RUN=1 SKIP_MODULE_LOAD=1 SKIP_RUNTIME_CHECK=1 bash submit_rnaseq.sh mouse_veev
 ```
 
 Pre-cache nf-core containers:
@@ -155,6 +197,8 @@ Pre-cache nf-core containers:
 ```bash
 bash bin/precache_nfcore_containers.sh
 ```
+
+---
 
 ## Output Locations
 
@@ -169,12 +213,14 @@ Smoke test outputs go to:
 - `RESULTS_BASE_SMOKE/<dataset>`
 - `WORK_ROOT_SMOKE/<dataset>`
 
+---
+
 ## Requirements
 
-- Slurm
+- Slurm Workload Manager
 - Java `>= 17`
 - Nextflow `>= 25.04.3`
 - Singularity or Apptainer
-- Python 3
+- Python 3 (`pytest` for automated test execution)
 
-This repo is meant as a practical run wrapper, not a general-purpose distributed pipeline package.
+This repo is meant as a practical run wrapper for institutional HPC execution.

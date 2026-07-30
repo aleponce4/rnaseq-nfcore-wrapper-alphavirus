@@ -143,56 +143,14 @@ fi
 work_dir="$work_root/$dataset"
 outdir="$results_base/$dataset"
 
-find_single_matching_file() {
-    local search_dir=$1
-    shift
-    local patterns=("$@")
-    local matches=()
-    local pattern
-
-    for pattern in "${patterns[@]}"; do
-        while IFS= read -r file; do
-            matches+=("$file")
-        done < <(find "$search_dir" -maxdepth 1 -type f -name "$pattern" | sort)
-    done
-
-    if [[ ${#matches[@]} -eq 0 ]]; then
-        echo "No matching files found in $search_dir for patterns: ${patterns[*]}" >&2
-        exit 1
-    fi
-    if [[ ${#matches[@]} -ne 1 ]]; then
-        echo "Expected exactly one matching file in $search_dir, found ${#matches[@]}:" >&2
-        printf '  %s\n' "${matches[@]}" >&2
-        exit 1
-    fi
-}
-
-check_fastq_inputs() {
-    local first_r1
-
-    if [[ ! -d "$fastq_dir" ]]; then
-        echo "FASTQ input directory not found: $fastq_dir" >&2
-        exit 1
-    fi
-    first_r1=$(find "$fastq_dir" -maxdepth 1 \( -type f -o -type l \) -name '*_R1_001.fastq.gz' -print -quit)
-    if [[ -z "$first_r1" ]]; then
-        echo "No R1 FASTQ files found in: $fastq_dir" >&2
-        exit 1
-    fi
-}
-
-check_reference_inputs() {
-    if [[ ! -d "$host_dir" || ! -d "$virus_dir" ]]; then
-        echo "Expected reference directories are missing for $dataset" >&2
-        echo "Expected: $host_dir and $virus_dir" >&2
-        exit 1
-    fi
-
-    find_single_matching_file "$host_dir" '*.fa' '*.fa.gz' '*.fasta' '*.fasta.gz' '*.fna' '*.fna.gz'
-    find_single_matching_file "$host_dir" '*.gtf' '*.gtf.gz'
-    find_single_matching_file "$virus_dir" '*.fa' '*.fa.gz' '*.fasta' '*.fasta.gz' '*.fna' '*.fna.gz'
-    find_single_matching_file "$virus_dir" '*.gtf' '*.gtf.gz' '*.gff' '*.gff.gz' '*.gff3' '*.gff3.gz'
-}
+lib_file="$script_dir/bin/lib_rnaseq.sh"
+if [[ -f "$lib_file" ]]; then
+    # shellcheck disable=SC1091
+    source "$lib_file"
+else
+    echo "Required runtime library missing: $lib_file" >&2
+    exit 1
+fi
 
 # Step 4: run lightweight preflight checks that can be used before sbatch.
 if [[ "$smoke_test" == "1" ]]; then
@@ -212,8 +170,8 @@ if [[ "$smoke_test" == "1" ]]; then
     "${smoke_builder_args[@]}"
 fi
 
-check_fastq_inputs
-check_reference_inputs
+check_fastq_inputs "$fastq_dir" || exit 1
+check_reference_inputs "$host_dir" "$virus_dir" "$dataset" || exit 1
 
 if [[ "$preflight_only" == "1" ]]; then
     printf 'Preflight checks passed for %s\n' "$dataset"
@@ -254,118 +212,6 @@ export NXF_APPTAINER_CACHEDIR=${NXF_APPTAINER_CACHEDIR:-$container_cache}
 # Step 6: create the directories Nextflow and the helper scripts will write to.
 mkdir -p "$results_base" "$work_dir" "$container_cache" "$script_dir/metadata"
 
-ensure_module_command() {
-    if command -v module >/dev/null 2>&1; then
-        return 0
-    fi
-    if [[ -f /etc/profile.d/modules.sh ]]; then
-        # shellcheck disable=SC1091
-        source /etc/profile.d/modules.sh
-    elif [[ -f /etc/profile.d/lmod.sh ]]; then
-        # shellcheck disable=SC1091
-        source /etc/profile.d/lmod.sh
-    fi
-    command -v module >/dev/null 2>&1
-}
-
-prepend_nextflow_bin_dir() {
-    if [[ -n "$nextflow_bin_dir" && -x "$nextflow_bin_dir/nextflow" ]]; then
-        export PATH="$nextflow_bin_dir:$PATH"
-    fi
-}
-
-nextflow_version_ge() {
-    local current=$1
-    local minimum=$2
-    local current_major current_minor current_patch
-    local minimum_major minimum_minor minimum_patch
-
-    IFS=. read -r current_major current_minor current_patch <<<"$current"
-    IFS=. read -r minimum_major minimum_minor minimum_patch <<<"$minimum"
-
-    current_patch=${current_patch:-0}
-    minimum_patch=${minimum_patch:-0}
-
-    if (( current_major > minimum_major )); then
-        return 0
-    fi
-    if (( current_major < minimum_major )); then
-        return 1
-    fi
-    if (( current_minor > minimum_minor )); then
-        return 0
-    fi
-    if (( current_minor < minimum_minor )); then
-        return 1
-    fi
-    (( current_patch >= minimum_patch ))
-}
-
-java_version_ge() {
-    local current=$1
-    local minimum=$2
-    local current_major minimum_major
-
-    current_major=${current%%.*}
-    minimum_major=${minimum%%.*}
-    (( current_major >= minimum_major ))
-}
-
-check_java_version() {
-    local required_minimum="17"
-    local detected_version
-
-    if ! command -v java >/dev/null 2>&1; then
-        echo "java is not on PATH after runtime setup" >&2
-        exit 1
-    fi
-
-    detected_version=$(java -version 2>&1 | awk -F '"' '/version/ {print $2; exit}')
-    if [[ -z "$detected_version" ]]; then
-        echo "Could not determine Java version from 'java -version'" >&2
-        exit 1
-    fi
-
-    if [[ "$detected_version" == 1.* ]]; then
-        detected_version=${detected_version#1.}
-    fi
-
-    if ! java_version_ge "$detected_version" "$required_minimum"; then
-        echo "Java $detected_version is too old for Nextflow $NXF_VER; need >= $required_minimum" >&2
-        exit 1
-    fi
-}
-
-check_nextflow_version() {
-    local required_minimum="25.04.3"
-    local detected_version
-
-    if ! command -v nextflow >/dev/null 2>&1; then
-        echo "nextflow is not on PATH after module loading" >&2
-        exit 1
-    fi
-
-    detected_version=$(nextflow -version 2>/dev/null | awk '/version/ {print $NF; exit}')
-    detected_version=${detected_version#v}
-
-    if [[ -z "$detected_version" ]]; then
-        echo "Could not determine Nextflow version from 'nextflow -version'" >&2
-        exit 1
-    fi
-
-    if ! nextflow_version_ge "$detected_version" "$required_minimum"; then
-        echo "Nextflow $detected_version is too old for nf-core/rnaseq 3.23.0; need >= $required_minimum" >&2
-        exit 1
-    fi
-}
-
-print_runtime_summary() {
-    printf 'Runtime nextflow: %s\n' "$(command -v nextflow)"
-    printf 'Runtime java: %s\n' "$(command -v java)"
-    nextflow -version | awk 'NR<=4 {print}'
-    java -version 2>&1 | awk 'NR==1 {print}'
-}
-
 # Step 7: load Nextflow and the container runtime unless the environment already has them.
 if [[ "${SKIP_MODULE_LOAD:-0}" != "1" ]]; then
     if ensure_module_command; then
@@ -386,12 +232,14 @@ if [[ "${SKIP_MODULE_LOAD:-0}" != "1" ]]; then
 fi
 
 # Step 7b: prefer a user-managed Nextflow launcher when configured.
-prepend_nextflow_bin_dir
+prepend_nextflow_bin_dir "$nextflow_bin_dir"
 
 # Step 7c: fail early if the loaded Java/Nextflow runtime is not usable.
-check_java_version
-check_nextflow_version
-print_runtime_summary
+if [[ "${SKIP_RUNTIME_CHECK:-0}" != "1" ]]; then
+    check_java_version
+    check_nextflow_version
+    print_runtime_summary
+fi
 
 # Step 8: build the combined reference and generate the nf-core samplesheet.
 "$reference_builder" "$dataset"
