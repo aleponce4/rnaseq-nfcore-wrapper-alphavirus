@@ -9,6 +9,14 @@
 #SBATCH --time=24:00:00
 #SBATCH -o %x.%j.out
 
+# The #SBATCH lines above are the site defaults for the manager job. Slurm
+# parses them before any shell code or settings.env runs, so they cannot read
+# environment variables. To target a different partition/QoS, override them at
+# submit time and set the matching env vars for the Nextflow child jobs:
+#   export HPC_PARTITION=long HPC_QOS=long
+#   sbatch -p "$HPC_PARTITION" -q "$HPC_QOS" --time=48:00:00 \
+#     submit_rnaseq.sh <dataset>
+
 set -euo pipefail
 
 # Main places to edit settings:
@@ -122,6 +130,13 @@ combined_gtf="$script_dir/references/build/$dataset/combined.gtf"
 host_dir="$script_dir/references/$host_ref"
 virus_dir="$script_dir/references/$virus_ref"
 
+# Slurm routing for the Nextflow child jobs. nextflow.config reads these from
+# the environment; the committed defaults match the #SBATCH lines above.
+hpc_partition=${HPC_PARTITION:-campus}
+hpc_qos=${HPC_QOS:-campus}
+export HPC_PARTITION="$hpc_partition"
+export HPC_QOS="$hpc_qos"
+
 nextflow_module=${NEXTFLOW_MODULE:-}
 java_module=${JAVA_MODULE:-}
 nextflow_bin_dir=${NEXTFLOW_BIN_DIR:-}
@@ -181,6 +196,7 @@ if [[ "$preflight_only" == "1" ]]; then
     printf 'FASTQs: %s\n' "$fastq_dir"
     printf 'Host reference dir:  %s (%s)\n' "$host_dir" "$host_ref"
     printf 'Virus reference dir: %s (%s)\n' "$virus_dir" "$virus_ref"
+    printf 'Child-job partition/QoS: %s / %s\n' "$hpc_partition" "$hpc_qos"
     exit 0
 fi
 
@@ -276,5 +292,6 @@ fi
 printf 'Results: %s\n' "$outdir"
 printf 'Work dir: %s\n' "$work_dir"
 printf 'Settings file: %s\n' "$settings_file"
+printf 'Child-job partition/QoS: %s / %s\n' "$hpc_partition" "$hpc_qos"
 
 "${cmd[@]}"

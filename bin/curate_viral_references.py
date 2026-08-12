@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-"""Empirically derive alphavirus 26S transcript starts from RNA-seq data."""
+"""Empirically derive alphavirus 26S transcript starts from RNA-seq data.
+
+The two TSV tables written under --results-dir (empirical_tss_results.tsv and
+consensus_tss.tsv) hold per-sample study measurements. They are run artifacts
+and are deliberately NOT tracked in this repository (see .gitignore); the
+script recreates them from scratch on every invocation and never reads them
+back, so an absent or empty curation directory does not affect the result.
+"""
 
 from __future__ import annotations
 
@@ -89,7 +96,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--results-dir",
         default=str(viral_work_root / "curation"),
-        help="Directory for tracked empirical TSS metadata tables.",
+        help="Directory for the empirical TSS metadata tables (untracked run artifacts).",
     )
     parser.add_argument(
         "--manifest",

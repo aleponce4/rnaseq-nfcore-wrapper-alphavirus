@@ -7,6 +7,12 @@ viral_reference_work/polish/
 viral_references/polish/
 virus_polish.*.out
 
+# Curation tables written by bin/curate_viral_references.py contain per-sample
+# study measurements. They are run artifacts and must stay untracked.
+viral_reference_work/curation/*
+!viral_reference_work/curation/.gitkeep
+viral_references/curation/*
+
 # User-provided inputs and references
 inputs/mouse_veev/*
 inputs/mouse_eeev/*

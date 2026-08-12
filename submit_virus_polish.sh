@@ -9,6 +9,12 @@
 #SBATCH --time=08:00:00
 #SBATCH -o %x.%j.out
 
+# The #SBATCH lines above are the site defaults for this job. Slurm parses them
+# before any shell code or settings.env runs, so they cannot read environment
+# variables. To target a different partition/QoS, override them at submit time:
+#   export HPC_PARTITION=long HPC_QOS=long
+#   sbatch -p "$HPC_PARTITION" -q "$HPC_QOS" submit_virus_polish.sh <virus>
+
 set -euo pipefail
 
 export OMP_NUM_THREADS="${SLURM_CPUS_PER_TASK:-1}"
@@ -61,6 +67,11 @@ if [[ -d "$script_dir/viral_reference_work" || ! -d "$script_dir/viral_reference
 else
     viral_work_root="$script_dir/viral_references"
 fi
+
+hpc_partition=${HPC_PARTITION:-campus}
+hpc_qos=${HPC_QOS:-campus}
+export HPC_PARTITION="$hpc_partition"
+export HPC_QOS="$hpc_qos"
 
 results_root=${POLISH_RESULTS_ROOT:-${RESULTS_BASE:-$script_dir/results}}
 output_root=${POLISH_OUTPUT_ROOT:-$viral_work_root/polish}
@@ -129,5 +140,6 @@ printf 'Polishing viral reference(s): %s\n' "$virus"
 printf 'Results root: %s\n' "$results_root"
 printf 'Output root: %s\n' "$output_root"
 printf 'Settings file: %s\n' "$settings_file"
+printf 'Partition/QoS: %s / %s\n' "$hpc_partition" "$hpc_qos"
 
 "${cmd[@]}"
