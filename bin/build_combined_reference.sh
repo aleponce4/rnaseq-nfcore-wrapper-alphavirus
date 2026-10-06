@@ -3,7 +3,7 @@ set -euo pipefail
 
 usage() {
     cat <<'EOF'
-Usage: build_combined_reference.sh <mouse_veev|mouse_eeev|rat_veev>
+Usage: build_combined_reference.sh <mouse_veev|mouse_eeev|rat_veev|mouse_tc83>
 
 Builds:
   references/build/<dataset>/combined.fa
@@ -34,8 +34,17 @@ case "$dataset" in
         host_ref="rat"
         virus_ref="${RAT_VEEV_VIRUS_REF:-VEEV}"
         ;;
+    mouse_tc83)
+        host_ref="mouse"
+        # No default on purpose -- see the same case in submit_rnaseq.sh.
+        virus_ref="${MOUSE_TC83_VIRUS_REF:-}"
+        if [[ -z "$virus_ref" ]]; then
+            echo "MOUSE_TC83_VIRUS_REF must be set for mouse_tc83 (e.g. TC83, VEEV_INH)." >&2
+            exit 1
+        fi
+        ;;
     *)
-        echo "Dataset must be one of: mouse_veev, mouse_eeev, rat_veev. Got: $dataset" >&2
+        echo "Dataset must be one of: mouse_veev, mouse_eeev, rat_veev, mouse_tc83. Got: $dataset" >&2
         exit 1
         ;;
 esac
